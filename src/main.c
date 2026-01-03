@@ -1,54 +1,55 @@
-/*
-Raylib example file.
-This is an example main file for a simple raylib project.
-Use this as a starting point or replace it with your code.
-
-by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
-
-*/
-
 #include "raylib.h"
+#include <mpv/client.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "resource_dir.h"	// utility header for SearchAndSetResourceDir
+int main(void) {
+    InitWindow(800, 450, "Retro music player");
 
-int main ()
-{
-	// Tell the window to use vsync and work on high DPI displays
-	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
+    // 1. Initialize MPV
+    mpv_handle *ctx = mpv_create();
+    if (!ctx) return 1;
 
-	// Create the window and OpenGL context
-	InitWindow(1280, 800, "Hello Raylib");
+    // 2. CRITICAL OPTIONS
+    // Enable ytdl to handle the https links in your .m3u
+    mpv_set_option_string(ctx, "ytdl", "yes"); 
+    // Force audio-only so it doesn't try to open a video window
+    mpv_set_option_string(ctx, "vo", "null"); 
+    // This will spit out everything mpv is doing to your terminal
+    mpv_set_option_string(ctx, "terminal", "yes");
+    mpv_set_option_string(ctx, "msg-level", "all=v");
+    // Set volume to 100
+    double vol = 100.0;
+    mpv_set_property(ctx, "volume", MPV_FORMAT_DOUBLE, &vol);
 
-	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
-	SearchAndSetResourceDir("resources");
+    mpv_initialize(ctx);
 
-	// Load a texture from the resources directory
-	Texture wabbit = LoadTexture("wabbit_alpha.png");
-	
-	// game loop
-	while (!WindowShouldClose())		// run the loop until the user presses ESCAPE or presses the Close button on the window
-	{
-		// drawing
-		BeginDrawing();
+    // 3. Load your playlist
+    // "replace" tells mpv to clear the current track and play this immediately
+    const char *cmd[] = {"loadfile", "~/Music/Vocaloid.m3u", NULL};
+    mpv_command(ctx, cmd);
 
-		// Setup the back buffer for drawing (clear color and depth buffers)
-		ClearBackground(BLACK);
+    while (!WindowShouldClose()) {
+        // 4. Pump MPV Events (Required for playback to start)
+        while (1) {
+            mpv_event *event = mpv_wait_event(ctx, 0);
+            if (event->event_id == MPV_EVENT_NONE) break;
+            
+            // Log errors to terminal for debugging
+            if (event->event_id == MPV_EVENT_LOG_MESSAGE) {
+                mpv_event_log_message *msg = event->data;
+                printf("[mpv] %s", msg->text);
+            }
+        }
 
-		// draw some text using the default font
-		DrawText("Hello Raylib", 200,200,20,WHITE);
+        BeginDrawing();
+            ClearBackground(BLACK);
+            DrawText("PIB-BOY: STREAMING...", 20, 20, 20, GREEN);
+            DrawRectangleLines(10, 10, 780, 430, GREEN);
+        EndDrawing();
+    }
 
-		// draw our texture to the screen
-		DrawTexture(wabbit, 400, 200, WHITE);
-		
-		// end the frame and get ready for the next one  (display frame, poll input, etc...)
-		EndDrawing();
-	}
-
-	// cleanup
-	// unload our texture so it can be cleaned up
-	UnloadTexture(wabbit);
-
-	// destroy the window and cleanup the OpenGL context
-	CloseWindow();
-	return 0;
+    mpv_terminate_destroy(ctx);
+    CloseWindow();
+    return 0;
 }
