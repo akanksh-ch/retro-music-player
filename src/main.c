@@ -26,7 +26,7 @@ int main(void) {
 
     // 3. Load your playlist
     // "replace" tells mpv to clear the current track and play this immediately
-    const char *cmd[] = {"loadfile", "~/Music/Vocaloid.m3u", NULL};
+    const char *cmd[] = {"loadfile", "~/Music/Rally House.m3u", NULL};
     mpv_command(ctx, cmd);
 
     while (!WindowShouldClose()) {
