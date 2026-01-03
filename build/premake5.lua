@@ -229,6 +229,11 @@ if (downloadRaylib) then
 
         filter "system:linux"
             links {"pthread", "m", "dl", "rt"}
+            links { "mpv" }
+            buildoptions { "`pkg-config --cflags mpv`" }
+            linkoptions { "`pkg-config --libs mpv`" }
+	    includedirs { "/usr/include/mpv" }
+	filter {}
 
         filter {"system:linux", "options:wayland=off"}
             links {"X11"}
